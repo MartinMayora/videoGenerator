@@ -1,21 +1,30 @@
-import conseguirVideos
-import DeteccionCara
-import comando
+import src.conseguirVideos as conseguirVideos
+import src.DeteccionCara as DeteccionCara
+import src.comando as comando
 import os
+import src.cleanUp as cleanUp
 
 choice = input("Choose an option (1 = Top clips from a category, 2 = Top clips from a creator): ")
 language = input("Choose the language (english, spanish, none): ").lower()
 commands = []
+
+
 creatorNames = conseguirVideos.conseguirVids(choice, language)
 
 for creator in creatorNames:
     aux = f"./build/videos/{creator['thumbnail']}"
-    coords = DeteccionCara.deteccionCara(aux)
+    coords = DeteccionCara.get_interactive_coordinates(aux)
+    print(coords['x'])
     creator['x'] = coords['x']
     creator['y'] = coords['y']
-    
+        
 for creator in creatorNames:
-    commands.append(comando.crearComandoShort(creator['video'], creator['name'], creator['x'], creator['y']))
+    aAgregar = comando.crearComandoShort(creator['video'], creator['name'], creator['x'], creator['y'])
+    print(aAgregar)
+    commands.append(aAgregar)
+    
 
 for command in commands:
     os.system(command)
+    
+cleanUp.clear_videos_folder()

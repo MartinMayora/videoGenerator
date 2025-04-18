@@ -5,7 +5,8 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
-import time  # For rate limiting
+import time
+import yt_dlp
 
 load_dotenv()
 client_id = os.getenv("client_id")
@@ -68,72 +69,103 @@ def get_top_clips(category_id, client_id, access_token, amount, month_year):
             break
     
     return clips
-def get_video_url(clip_id):
-    """Scrape the video URL from Twitch clip page"""
+def get_creator_id(username, client_id, access_token):
+    """Get the Twitch user ID from a username"""
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9'
+        "Authorization": f"Bearer {access_token}",
+        "Client-Id": client_id
     }
     
-    # Try multiple endpoints to find the video URL
-    endpoints = [
-        f"https://clips.twitch.tv/{clip_id}",
-        f"https://clips.twitch.tv/embed?clip={clip_id}",
-        f"https://www.twitch.tv/clips/{clip_id}" #ACA <==
-    ]
+    params = {"login": username}
     
-    for url in endpoints:
-        try:
-            response = requests.get(url, headers=headers, timeout=10)
-            response.raise_for_status()
+    try:
+        response = requests.get(
+            "https://api.twitch.tv/helix/users",
+            headers=headers,
+            params=params
+        )
+        response.raise_for_status()
+        
+        data = response.json()
+        if data.get('data'):
+            return data['data'][0]['id']
             
-            # Method 1: Check for video tag
-            soup = BeautifulSoup(response.text, 'html.parser')
-            video_tag = soup.find('video')
-            if video_tag and video_tag.get('src'):
-                return video_tag['src']
-            
-            # Method 2: Search for MP4 in JSON data
-            match = re.search(r'"quality_options":\[(.*?)\]', response.text)
-            if match:
-                sources = re.findall(r'"source":"(https://[^"]+\.mp4)"', match.group(1))
-                if sources:
-                    return sources[0]  # Return highest quality
-                    
-        except Exception as e:
-            continue
+    except Exception as e:
+        print(f"Error getting creator ID: {str(e)}")
     
     return None
 
-def download_video(clip_id, video_number):
-    """Download video by scraping the URL"""
-    video_url = get_video_url(clip_id)
-    if not video_url:
-        print(f"Could not find video URL for clip {clip_id}")
-        return False
+def get_top_clips_creator(creator_id, client_id, access_token, amount, period="all"):
+    """Get top clips for a specific creator"""
+    headers = {
+        "Authorization": f"Bearer {access_token}", 
+        "Client-Id": client_id
+    }
+
+    clips = []
+    cursor = None
     
-    output_dir = './Videos'
-    os.makedirs(output_dir, exist_ok=True)
-    video_path = os.path.join(output_dir, f"{video_number}.mp4")
-    
-    try:
-        with requests.get(video_url, stream=True, timeout=20) as response:
+    while len(clips) < int(amount):
+        params = {
+            "broadcaster_id": creator_id,
+            "first": min(100, int(amount) - len(clips)),
+            **({"after": cursor} if cursor else {})
+        }
+        
+        # Add period filter if specified
+        if period in ["day", "week", "month", "all"]:
+            params["period"] = period
+        
+        try:
+            response = requests.get(
+                "https://api.twitch.tv/helix/clips",
+                headers=headers,
+                params=params
+            )
             response.raise_for_status()
-            with open(video_path, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
-        print(f"Downloaded video {video_number}.mp4")
-        return True
+            
+            data = response.json()
+            clips.extend(data.get('data', []))
+            cursor = data.get('pagination', {}).get('cursor')
+            
+            if not cursor:
+                break
+                
+        except Exception as e:
+            print(f"Error getting creator clips: {str(e)}")
+            break
+    
+    return clips
+
+
+def download_video(clip_info, video_number):
+    url = clip_info['url']
+    
+    download_dir = os.path.expanduser("./build/videos") 
+    os.makedirs(download_dir, exist_ok=True)  
+   
+    output_template = os.path.join(download_dir, f"{video_number}.mp4")
+
+    ydl_opts = {
+        'format': 'best',
+        'outtmpl': output_template,  
+        'restrictfilenames': True,   
+        'quiet': True,               
+    }
+    
+    # 4. Download
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+        print(f"Downloaded: {output_template}")
     except Exception as e:
-        print(f"Failed to download video: {str(e)}")
-        return False
+        print(f"Error downloading {url}: {e}")
 
 def download_thumbnail(thumbnail_url, video_number):
-    """Download thumbnail through API"""
     if not thumbnail_url:
         return False
         
-    output_dir = './Videos'
+    output_dir = './build/videos'
     os.makedirs(output_dir, exist_ok=True)
     thumbnail_path = os.path.join(output_dir, f"{video_number}.jpg")
     
@@ -152,10 +184,11 @@ def download_clip(clip_info, video_number):
     # Download thumbnail through API
     thumbnail_success = download_thumbnail(clip_info.get('thumbnail_url'), video_number)
     
-    # Download video through scraping
-    video_success = download_video(clip_info['id'], video_number)
+    # Download video through scraping the clip URL
+    video_success = download_video(clip_info, video_number)
     
     return thumbnail_success and video_success
+
 def conseguirVids(choice, language):
     token = get_access_token(client_id, client_secret)
     if not token:
@@ -179,7 +212,7 @@ def conseguirVids(choice, language):
         for i, clip in enumerate(all_clips[:int(amount)], 1):
             if download_clip(clip, i):
                 downloaded_clips.append(clip)
-            time.sleep(1)  # Respectful rate limiting
+            time.sleep(1)  # Rate limiting
             
         return [{
             'name': clip['broadcaster_name'],
@@ -187,6 +220,30 @@ def conseguirVids(choice, language):
             'thumbnail': f"{idx}.jpg",
             'x': '',
             'y': ''
-        } for idx, clip in enumerate(downloaded_clips, 1)]
-    
+        } for idx, clip in enumerate(all_clips, 1)]
+    elif choice == '2':
+        creator_name = input("Enter Creator Username: ")
+        amount = input("Enter amount of videos: ")
+
+        creator_id = get_creator_id(creator_name, client_id, token)
+        if not creator_id:
+            print(f"Category '{category}' not found")
+            return []
+
+        all_clips = get_top_clips_creator(creator_id, client_id, token, amount)
+        print(f"Found {len(all_clips)} clips")
+        
+        downloaded_clips = []
+        for i, clip in enumerate(all_clips[:int(amount)], 1):
+            if download_clip(clip, i):
+                downloaded_clips.append(clip)
+            time.sleep(1)  # Rate limiting
+            
+        return [{
+            'name': clip['broadcaster_name'],
+            'video': f"{idx}.mp4",
+            'thumbnail': f"{idx}.jpg",
+            'x': '',
+            'y': ''
+        } for idx, clip in enumerate(all_clips, 1)]
     return []
