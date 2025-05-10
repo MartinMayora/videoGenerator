@@ -13,21 +13,21 @@ def main():
     creatorNames = conseguirVideos.conseguirVids(choice, language)
     
     for creator in creatorNames:
-    aux = f"./build/videos/{creator['thumbnail']}"
-    coords = DeteccionCara.get_interactive_coordinates(aux)
-    print(coords['x'])
-    creator['x'] = coords['x']
-    creator['y'] = coords['y']
+        aux = f"./build/videos/{creator['thumbnail']}"
+        coords = DeteccionCara.get_interactive_coordinates(aux)
+        print(coords['x'])
+        creator['x'] = coords['x']
+        creator['y'] = coords['y']
         
     for creator in creatorNames:
-    aAgregar = comando.crearComandoShort(creator['video'], creator['name'], creator['x'], creator['y'])
-    print(aAgregar)
-    commands.append(aAgregar)
-    
+        aAgregar = comando.crearComandoShort(creator['video'], creator['name'], creator['x'], creator['y'])
+        print(aAgregar)
+        commands.append(aAgregar)
+        
     
     for command in commands:
-    os.system(command)
+        os.system(command)
     
     cleanUp.clear_videos_folder()
-if __name__ = "__main__":
+if __name__ == "__main__":
     main()

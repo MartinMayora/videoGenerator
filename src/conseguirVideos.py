@@ -9,8 +9,8 @@ import time
 import yt_dlp
 
 load_dotenv()
-client_id = os.getenv("client_id")
-client_secret = os.getenv("client_secret")
+client_id = os.getenv("twitch_client_id")
+client_secret = os.getenv("twitch_client_secret")
 
 def get_access_token(client_id, client_secret):
     response = requests.post(
