@@ -3,12 +3,10 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 
-# Fixed rectangle size
 rect_width = 360
 rect_height = 240
 
 def get_interactive_coordinates(image_path):
-    # Remove the offscreen setting to allow display
     if "QT_QPA_PLATFORM" in os.environ:
         del os.environ["QT_QPA_PLATFORM"]
     
@@ -17,7 +15,6 @@ def get_interactive_coordinates(image_path):
         print(f"Error: Could not load image from '{image_path}'.")
         return None
     
-    # Resize if needed
     if image.shape[1] != 1920 or image.shape[0] != 1080:
         image = cv2.resize(image, (1920, 1080))
     
@@ -28,7 +25,7 @@ def get_interactive_coordinates(image_path):
 
     def on_click(event):
         nonlocal rect_start, drawing
-        if event.button == 1:  # Left mouse button
+        if event.button == 1: 
             rect_start = (int(event.xdata - rect_width//2), int(event.ydata - rect_height//2))
             drawing = True
             update_display()
@@ -45,7 +42,6 @@ def get_interactive_coordinates(image_path):
     def update_display():
         img_copy = img_rgb.copy()
         if rect_start:
-            # Ensure coordinates are within image bounds
             x = max(0, min(rect_start[0], img_rgb.shape[1] - rect_width))
             y = max(0, min(rect_start[1], img_rgb.shape[0] - rect_height))
             
@@ -66,9 +62,7 @@ def get_interactive_coordinates(image_path):
     
     plt.show()
     
-    # After window is closed, return the coordinates
     if rect_start:
-        # Final bounds check
         x = max(0, min(rect_start[0], img_rgb.shape[1] - rect_width))
         y = max(0, min(rect_start[1], img_rgb.shape[0] - rect_height))
         return {'x': x, 'y': y}

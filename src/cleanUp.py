@@ -18,6 +18,3 @@ def clear_videos_folder():
             print(f"Failed to delete {file_path}. Reason: {e}")
 
     print(f"All contents of {folder_path} have been removed successfully.")
-
-# Example usage:
-# clear_videos_folder()
