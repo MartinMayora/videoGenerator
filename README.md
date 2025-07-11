@@ -10,7 +10,7 @@ To run this project, you will need to add the following environment variables to
 
 `twitch_client_id`
 
-`twitch client_secret`
+`twitch_client_secret`
 
 These can be obtained by creating a Developer Application (https://dev.twitch.tv/console/apps)
 
