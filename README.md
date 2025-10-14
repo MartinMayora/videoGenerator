@@ -1,5 +1,5 @@
 
-# Semi-Automatic Short Form Video Generator
+# Automatic Short Form Video Generator
 
 + Makes short form videos from twitch clips. Mainly works on gaming clips with webcam. You can choose a creator or twitch category, how many clips and the language of those clips. Then choose where the webcam of the clips are. When selecting, click on the webcam (the red rectangle shows the area it is going to select) and press q to confirm selection.
     
