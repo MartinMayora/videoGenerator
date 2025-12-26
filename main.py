@@ -5,11 +5,15 @@ import os
 import src.cleanUp as cleanUp
 
 def main():
+    # Create necessary directories if they don't exist
+    os.makedirs('./build/videos', exist_ok=True)
+    os.makedirs('./build/output', exist_ok=True)
+
     choice = input("Choose an option (1 = Top clips from a category, 2 = Top clips from a creator): ")
     language = input("Choose the language (english, spanish, none): ").lower()
     commands = []
-    
-    
+
+
     creatorNames = conseguirVideos.conseguirVids(choice, language)
     
     for creator in creatorNames:

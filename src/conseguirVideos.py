@@ -221,6 +221,7 @@ def conseguirVids(choice, language):
             'x': '',
             'y': ''
         } for idx, clip in enumerate(all_clips, 1)]
+        
     elif choice == '2':
         creator_name = input("Enter Creator Username: ")
         amount = input("Enter amount of videos: ")
