@@ -1,0 +1,8 @@
+opencv-python
+numpy
+matplotlib
+requests
+beautifulsoup4
+python-dotenv
+python-dateutil
+yt-dlp

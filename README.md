@@ -14,6 +14,24 @@ To run this project, you will need to add the following environment variables to
 
 These can be obtained by creating a Developer Application (https://dev.twitch.tv/console/apps)
 
+## Installation
+
+1. Create and activate a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate
+```
+
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+To deactivate the virtual environment later, run:
+```bash
+deactivate
+```
+
 ## Deployment
 
 To deploy this project run
